@@ -1,0 +1,95 @@
+version: '3'
+
+services:
+  config-service:
+    environment:
+      - JAVA_OPTS=-XX:MaxRAM=500m
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULTLABEL=master
+    image:
+    ports:
+      - "8888:8888"
+    volumes:
+      - "./ps-config-service-ssh:/root/.ssh:ro"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  eureka-service:
+    environment:
+      - JAVA_OPTS=-XX:MaxRAM=500m
+      - SPRING_PROFILES_ACTIVE=development
+    image:
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  distillehr-document-storage-service-db:
+    environment:
+      - POSTGRES_USER=distillehr
+      - POSTGRES_PASSWORD=foobar11
+      - POSTGRES_DB=distillehr-document-storage-service-db
+    image: postgres:12.2
+    ports:
+      - "5432:5432"
+  distillehr-medhost-enterprise-extraction-service-db:
+    environment:
+      - POSTGRES_USER=distillehr
+      - POSTGRES_PASSWORD=foobar11
+      - POSTGRES_DB=distillehr-medhost-enterprise-extraction-service-db
+    image: postgres:12.2
+    ports:
+      - "5433:5432"
+  distillehr-document-storage-service:
+    environment:
+      - JAVA_OPTS=-XX:MaxRAM=500m
+      - SPRING_CLOUD_CONFIG_URI=http://config-service:8888
+      - SPRING_PROFILES_ACTIVE=config-client,docker1
+      - SERVER_PORT=8081
+    image:
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - config-service
+      - eureka-service
+  distillehr-medhost-enterprise-extraction-service:
+    environment:
+      - JAVA_OPTS=-XX:MaxRAM=1000m
+      - SPRING_CLOUD_CONFIG_URI=http://config-service:8888
+      - SPRING_PROFILES_ACTIVE=config-client,psfjenk1
+    image:
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - config-service
+      - eureka-service
+      - distillehr-document-storage-service
+  distillehr-document-viewer-service:
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-service:8888
+      - SPRING_PROFILES_ACTIVE=config-client,docker1
+    image:
+    ports:
+      - "8082:8082"
+    depends_on:
+      - config-service
+      - eureka-service
+      - distillehr-document-storage-service
+  distillehr-empi-service:
+    image:
+    ports:
+      - "10080:8080"

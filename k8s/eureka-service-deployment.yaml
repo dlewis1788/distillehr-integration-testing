@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.23.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: eureka-service
+  name: eureka-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: eureka-service
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.23.0 (HEAD)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: eureka-service
+    spec:
+      containers:
+        - env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: development
+          image:
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:8761/actuator/health
+            failureThreshold: 5
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: eureka-service
+          ports:
+            - containerPort: 8761
+          resources: {}
+      restartPolicy: Always
+status: {}
